@@ -6,14 +6,9 @@
 #include <mpi.h>
 
 #include <bruteforce/bruteforce.h>
+#include "work.h"
 
-struct work{
-	char* begin;
-	int nb;
-}
-
-#define WORK_SIZE 1000
-
+MPI_Comm workers_comm;
 
 // work_begin += work_size
 // work_size mis à jour si il n'y a plus assez de chaines possibles
@@ -21,7 +16,13 @@ struct work{
 int next_work(char* a, int r, struct work * work)
 {
 	//TODO
-	return WORK_SIZE;
+	return work->end - work->begin;
+}
+
+void send_work(int worker_rank, const struct work* work)
+{
+  MPI_Datatype MPI_Type_work = get_work_type();
+  MPI_Send((void*)work, 1, MPI_Type_work, 0, TAG_SEND_WORK, workers_comm); 
 }
 
 int bruteforce(int p, int t ,char* a ,int r ,char* m , char* s)
@@ -33,7 +34,7 @@ int bruteforce(int p, int t ,char* a ,int r ,char* m , char* s)
 	assert(m!=NULL);
 	assert(s!=NULL);
 
-	MPI_Comm workers_comm;
+	
 	char rc[] = {(char)r,'\0'};
 	char *argv[] = {a, rc, m, NULL};
 	MPI_Comm_spawn("./worker", argv, p-1, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &workers_comm, MPI_ERRCODES_IGNORE);
@@ -47,8 +48,6 @@ int bruteforce(int p, int t ,char* a ,int r ,char* m , char* s)
 
 
 
-	char work_begin[r+1]; work_begin[0] = '\0';
-	int work_size = 10000;
 	int ended = 0;
 	while(ended<p-1)
 	{
@@ -57,15 +56,15 @@ int bruteforce(int p, int t ,char* a ,int r ,char* m , char* s)
 		MPI_Waitany(2,requests,&id,&status);
 		if(status.MPI_TAG == TAG_WORK_REQUEST)
 		{
-			char begin[r+1];
-			int work_size = next_work(a, r, work_begin);
+			struct work work;
+			int work_size = next_work(a, r, &work);
 			if(work_size > 0)
 			{
-				send_work(status.MPI_SOURCE, work_begin, work_size);
+				send_work(status.MPI_SOURCE, &work);
 			}
 			else
 			{
-				stop_worker(status.MPI_SOURCE);
+			  //stop_worker(status.MPI_SOURCE);
 				if(ended++ == p-1)
 					return 0;
 			}
@@ -74,11 +73,15 @@ int bruteforce(int p, int t ,char* a ,int r ,char* m , char* s)
 		{
 			for(int i=0; i<p-1; i++)
 			{
-				stop_worker(i);
+			  //stop_worker(i);
 			}
 			return 1;
 		}
 		else
+		  {
 			assert(0);
+			return 0;
+		  }
 	}
+	return 0;
 }

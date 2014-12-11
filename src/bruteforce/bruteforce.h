@@ -2,6 +2,7 @@
 #define BRUTEFORCE_H
 
 #define TAG_WORK_REQUEST 35
+#define TAG_SEND_WORK 42
 #define TAG_FOUND 66
 
 /**
