@@ -10,9 +10,17 @@ if(DEFINED USE_MKL)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mkl:${USE_MKL} -DUSE_MKL")
 endif()
 
-file(GLOB_RECURSE bruteforce_files
-       "src/bruteforce/*.c"
-       "src/bruteforce/*.h")
+file(GLOB_RECURSE master_files
+       "src/master/*.c"
+       "src/master/*.h")
+
+file(GLOB_RECURSE worker_files
+       "src/worker/*.c"
+       "src/worker/*.h")
+
+file(GLOB_RECURSE common_files
+       "src/common/*.c"
+       "src/common/*.h")
 
 find_package(MPI)
 message("Using MPI libs: ${MPI_LIBRARIES}")
@@ -21,12 +29,12 @@ set(PROJECT_INCLUDE_DIR "src")
 include_directories("${PROJECT_INCLUDE_DIR}")
 include_directories("${MPI_INCLUDE_PATH}")
 
-add_executable("master"	src/master.c
-			${bruteforce_files})
+add_executable("master"	${master_files}
+			${common_files})
 target_link_libraries("master" ${MPI_LIBRARIES})
 
-add_executable("worker"	src/worker.c
-			${bruteforce_files})
+add_executable("worker"	${worker_files}
+			${common_files})
 target_link_libraries("worker" ${MPI_LIBRARIES})
 
 
