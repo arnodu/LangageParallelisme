@@ -56,7 +56,7 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
     MPI_Recv_init(NULL,0,MPI_INT,MPI_ANY_SOURCE,TAG_WORK_REQUEST,comm_workers,&recv_work_request);
 
     //While there is an active worker
-    struct work work = {0,1};
+    struct work work = {0,0};
     int active_workers = p-1;
     while(active_workers > 0)
     {
@@ -115,7 +115,7 @@ static void parse_arguments(int argc, char** argv, int* p, int* t, char** a, int
     if(argc == 2)
     {
         *m = argv[1];
-        *p = 4;
+        *p = 2;
         *t = 2;
         *a = malloc(27);
         for(int i = 0; i<26; i++)

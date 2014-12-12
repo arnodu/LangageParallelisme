@@ -1,12 +1,14 @@
 #include "common/work.h"
 #include "common/mpi_tags.h"
 
-int work_next(char* a, int r, struct work* w)
+#define WORK_SIZE 9
+
+int work_next(char* a, int r, struct work* work)
 {
   //TODO
-  w->begin++;
-  w->end++;
-  return 1;
+  work->begin = work->end + 1;
+  work->end = work->begin + WORK_SIZE;
+  return work->end - work->begin;
 }
 
 static MPI_Datatype MPI_Type_work = NULL;
