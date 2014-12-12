@@ -8,7 +8,7 @@ struct work{
   int end;
 };
 
-int work_next(char* a, int r, struct work* w);
+int work_next(int a_size, int r, struct work* w);
 
 void work_send(MPI_Comm workers, int rank, struct work* w);
 

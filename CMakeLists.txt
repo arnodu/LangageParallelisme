@@ -31,11 +31,11 @@ include_directories("${MPI_INCLUDE_PATH}")
 
 add_executable("master"	${master_files}
 			${common_files})
-target_link_libraries("master" ${MPI_LIBRARIES})
+target_link_libraries("master" ${MPI_LIBRARIES} m)
 
 add_executable("worker"	${worker_files}
 			${common_files})
-target_link_libraries("worker" ${MPI_LIBRARIES})
+target_link_libraries("worker" ${MPI_LIBRARIES} m)
 
 
 

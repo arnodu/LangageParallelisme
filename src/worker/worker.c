@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include <mpi.h>
 #include <omp.h>
 
@@ -22,7 +23,7 @@ static int request_work(MPI_Comm comm_master, struct work* w);
  * @param t number of threads to use
  * @return true if the pwd has been found, false otherwise
  */
-static int do_work(const struct work* current_work, int t);
+static int do_work(const struct work* current_work, char* a, int r, char* m, int t, char* s);
 
 int main(int argc, char ** argv)
 {
@@ -43,6 +44,7 @@ int main(int argc, char ** argv)
 
 	int pwd_found = 0;
 	int has_work = 1;
+	char s[r+1];
 	struct work next_work;
 	for(struct work current_work = {0,0}; !pwd_found && has_work; current_work=next_work)
 	{
@@ -52,8 +54,13 @@ int main(int argc, char ** argv)
 			if(omp_get_thread_num() == 0)
 				has_work = request_work(comm_master, &next_work);
 			else
-				pwd_found = do_work(&current_work, t);
+				pwd_found = do_work(&current_work, a, r, m, t, s);
 		}
+	}
+
+	if(pwd_found)
+	{
+		MPI_Send(s, r, MPI_CHAR, 0, TAG_PWD_FOUND, comm_master);
 	}
 
 	MPI_Finalize();
@@ -69,14 +76,41 @@ static int request_work(MPI_Comm comm_master, struct work* next_work)
 	return 1;//Always get work
 }
 
-static int do_work(const struct work* current_work, int t)
+static int do_work(const struct work* current_work, char* a, int r, char* m, int t, char* s)
 {
+	int a_count = strlen(a);
+
+	int found = 0;
 	#pragma omp parallel for num_threads(t)
 	for(int i = current_work->begin; i<=current_work->end; i++)
 	{
-		//TODO : comparaison de chaines
-		printf("%d\t[%d,%d]\n",i, current_work->begin, current_work->end);
+		int current = i, k=0;
+		while(current!=0)
+		{
+			if(a[current%a_count] != m[k])
+				break;
+			else
+				current/=a_count;
+
+			k++;
+		}
+
+		if(current==0 && m[k] == '\0')
+			found = i;
 	}
 
-	return 0;//Never find pwd
+	if(found>0)
+	{
+		int k=0;
+		while(found!=0)
+		{
+			s[k] = a[found%a_count];
+			found/=a_count;
+			k++;
+		}
+		s[k]='\0';
+		return 1;
+	}
+	else
+		return 0;
 }

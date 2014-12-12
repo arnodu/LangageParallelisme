@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <string.h>
 #include <mpi.h>
 
 #include "common/mpi_tags.h"
 #include "common/work.h"
+
 
 static void parse_arguments(int argc, char** argv, int* p, int* t, char** a, int* r, char** m);
 static int master(int p, int t ,char* a ,int r ,char* m , char* s);
@@ -25,12 +27,6 @@ int main(int argc, char ** argv)
 
     MPI_Init(NULL,NULL);
 
-    /*fprintf(stderr,"%d : I'm master\n", getpid());
-      fprintf(stderr,"bruteforce (%dx%d threads) :\n", p, t);
-      fprintf(stderr,"  alphabet = %s\n",a);
-      fprintf(stderr,"  max_size = %d\n",r);
-      fprintf(stderr,"matching \"%s\"\n",m);*/
-
     int res = master(p, t ,a ,r ,m ,s);
 
     MPI_Finalize();
@@ -44,6 +40,7 @@ int main(int argc, char ** argv)
 
 static int master(int p, int t ,char* a ,int r ,char* m , char* s)
 {
+		int a_size = strlen(a);
     //Spawn the workers
     MPI_Comm comm_workers;
     char tc[] = {(char)t,'\0'};
@@ -67,7 +64,7 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
         {
             MPI_Start(&recv_work_request);
             //Answer work request
-            int work_size = work_next(a, r, &work); //get work
+            int work_size = work_next(a_size, r, &work); //get work
             if(work_size > 0) //If valid work, send it
             {
                 work_send(comm_workers, status.MPI_SOURCE, &work);
@@ -82,7 +79,7 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
         else if(status.MPI_TAG == TAG_PWD_FOUND) //If found return
         {
             //Receive result in s
-            MPI_Recv(s, r, MPI_INT, MPI_ANY_SOURCE, TAG_PWD_FOUND, comm_workers, MPI_STATUS_IGNORE);
+            MPI_Recv(s, r, MPI_CHAR, MPI_ANY_SOURCE, TAG_PWD_FOUND, comm_workers, MPI_STATUS_IGNORE);
             //stop_workers();
             return 1;
         }
@@ -122,7 +119,6 @@ static void parse_arguments(int argc, char** argv, int* p, int* t, char** a, int
             (*a)[i] = i+'a';
         (*a)[26] = '\0';
         *r = 4;
-        *m = argv[1];
     }
     else if(argc == 6)
     {

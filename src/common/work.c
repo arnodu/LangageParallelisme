@@ -1,13 +1,36 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include <limits.h>
+#include <assert.h>
+
 #include "common/work.h"
 #include "common/mpi_tags.h"
 
-#define WORK_SIZE 9
+#define WORK_SIZE 10000
 
-int work_next(char* a, int r, struct work* work)
+#define MIN(a,b) ((a)>(b))?(b):(a)
+
+int work_next(int alpha_size, int r, struct work* work)
 {
-  //TODO
-  work->begin = work->end + 1;
-  work->end = work->begin + WORK_SIZE;
+	//Update max_work_int = r^alpha_size
+	static int max_work_int, old_alpha_size, old_r;
+	if(alpha_size != old_alpha_size || r != old_r || max_work_int == 0)
+	{
+		old_alpha_size = alpha_size;
+		old_r = r;
+		float max_work = powf(alpha_size,r);
+		assert(max_work < INT_MAX);
+		max_work_int = (int) max_work;
+	}
+
+	//Sanity check
+	assert(work->end <= max_work_int);
+	assert(work->begin <= work->end);
+
+	work->begin = MIN(max_work_int, work->end+1);
+	work->end = MIN(max_work_int, work->begin+WORK_SIZE);
+
   return work->end - work->begin;
 }
 
