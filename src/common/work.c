@@ -19,7 +19,7 @@ int work_next(int alpha_size, int r, struct work* work)
 	{
 		old_alpha_size = alpha_size;
 		old_r = r;
-		float max_work = powf(alpha_size,r);
+		float max_work = powf(alpha_size+1,r+1);
 		assert(max_work < INT_MAX);
 		max_work_int = (int) max_work;
 	}

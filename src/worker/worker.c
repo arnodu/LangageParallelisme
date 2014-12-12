@@ -62,7 +62,10 @@ int main(int argc, char ** argv)
 	{
 		MPI_Send(s, r, MPI_CHAR, 0, TAG_PWD_FOUND, comm_master);
 	}
+	else
+		MPI_Send(NULL, 0, MPI_CHAR, 0, TAG_WORK_DONE, comm_master);
 
+	MPI_Comm_free(&comm_master);
 	MPI_Finalize();
 }
 
@@ -71,9 +74,7 @@ static int request_work(MPI_Comm comm_master, struct work* next_work)
 	MPI_Send(NULL,0,MPI_INT,0,TAG_WORK_REQUEST,comm_master);
 	work_recv(comm_master, next_work);
 
-	//TODO: detecter quand il n'y a plus de travail
-
-	return 1;//Always get work
+	return next_work->end != next_work->begin;
 }
 
 static int do_work(const struct work* current_work, char* a, int r, char* m, int t, char* s)
@@ -84,16 +85,57 @@ static int do_work(const struct work* current_work, char* a, int r, char* m, int
 	#pragma omp parallel for num_threads(t)
 	for(int i = current_work->begin; i<=current_work->end; i++)
 	{
+		char c[r+1]; c[r+1] = '\0';
+		int current = i;
+		for(int k=0; k<r; k++)
+		{
+			if(current%(a_count+1) == 0)
+				c[k] = '\0';
+			else
+				c[k] = a[current%(a_count+1)-1];
+
+			current = current/(a_count+1);
+		}
+
+		if(!strcmp(c,m))
+		{
+			found = 1;
+			#pragma omp critical
+			strcpy(s,c);
+		}
+	}
+	return found;
+}
+
+
+
+
+
+
+
+
+
+
+		/*printf("Doing %d : ",i);
 		int current = i, k=0;
 		while(current!=0)
 		{
-			if(a[current%a_count] != m[k])
+			printf("%c",current%(a_count+1) == 0 ? '_' : a[current%(a_count+1)]);
+			if(current%(a_count+1) == 0)
+				if(m[k] == '\0')
+				{
+					current = 0;
+					break;
+				}
+				else break;
+			else if(a[current%(a_count+1)-1] != m[k])
 				break;
 			else
 				current/=a_count;
 
 			k++;
 		}
+		printf("\n");
 
 		if(current==0 && m[k] == '\0')
 			found = i;
@@ -114,3 +156,4 @@ static int do_work(const struct work* current_work, char* a, int r, char* m, int
 	else
 		return 0;
 }
+*/

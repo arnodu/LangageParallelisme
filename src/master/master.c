@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include <assert.h>
 #include <mpi.h>
 
 #include "common/mpi_tags.h"
@@ -55,7 +56,8 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
     //While there is an active worker
     struct work work = {0,0};
     int active_workers = p-1;
-    while(active_workers > 0)
+    int found = 0;
+    while(active_workers > 0 && !found)
     {
         MPI_Status status;
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm_workers, &status);
@@ -63,28 +65,35 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
         if(status.MPI_TAG == TAG_WORK_REQUEST)
         {
             MPI_Start(&recv_work_request);
-            //Answer work request
-            int work_size = work_next(a_size, r, &work); //get work
-            if(work_size > 0) //If valid work, send it
-            {
-                work_send(comm_workers, status.MPI_SOURCE, &work);
-            }
-            else //If no work left
-            {
-                //stop_worker(status.MPI_SOURCE);
-                active_workers--;
-            }
             MPI_Wait(&recv_work_request, MPI_STATUS_IGNORE);
+            //Answer work request
+            if(!found)
+							work_next(a_size, r, &work); //get work
+						else
+							work.end = work.begin; //If pawd found, send empty job
+						work_send(comm_workers, status.MPI_SOURCE, &work);
         }
         else if(status.MPI_TAG == TAG_PWD_FOUND) //If found return
         {
             //Receive result in s
-            MPI_Recv(s, r, MPI_CHAR, MPI_ANY_SOURCE, TAG_PWD_FOUND, comm_workers, MPI_STATUS_IGNORE);
-            //stop_workers();
-            return 1;
+            MPI_Recv(s, r, MPI_CHAR, status.MPI_SOURCE, TAG_PWD_FOUND, comm_workers, MPI_STATUS_IGNORE);
+            found = 1;
+            active_workers --;
         }
+        else if(status.MPI_TAG == TAG_WORK_DONE)
+        {
+            MPI_Recv(s, r, MPI_CHAR, status.MPI_SOURCE, TAG_WORK_DONE, comm_workers, MPI_STATUS_IGNORE);
+            active_workers --;
+        }
+        else
+					assert(0);
     }
-    return 0;
+
+		//MPI_Test()
+		MPI_Request_free(&recv_work_request);
+    MPI_Comm_free(&comm_workers);
+
+    return found;
 }
 
 /** Parse a string into an unsigned int
