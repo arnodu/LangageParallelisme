@@ -36,7 +36,7 @@ int main(int argc, char ** argv)
 
 	//Get MPI infos
 	int provided;
-	MPI_Init_thread(NULL, NULL, MPI_THREAD_FUNNELED, &provided);
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 	assert(provided == MPI_THREAD_FUNNELED);
 	MPI_Comm comm_master;
 	MPI_Comm_get_parent(&comm_master);
@@ -44,18 +44,18 @@ int main(int argc, char ** argv)
 
 	int pwd_found = 0;
 	int has_work = 1;
-	char s[r+1];
+	char* s = malloc(r+1);
 	struct work next_work;
+	#pragma omp parallel
 	for(struct work current_work = {0,0}; !pwd_found && has_work; current_work=next_work)
 	{
-		//omp parallel inside loop for synchro
-		#pragma omp parallel num_threads(2)
-		{
-			if(omp_get_thread_num() == 0)
+			#pragma omp task
 				has_work = request_work(comm_master, &next_work);
-			else
+
+			#pragma omp task
 				pwd_found = do_work(&current_work, a, r, m, t, s);
-		}
+
+      #pragma omp taskwait
 	}
 
 	if(pwd_found)
@@ -64,6 +64,8 @@ int main(int argc, char ** argv)
 	}
 	else
 		MPI_Send(NULL, 0, MPI_CHAR, 0, TAG_WORK_DONE, comm_master);
+
+  free(s);
 
 	MPI_Comm_free(&comm_master);
 	MPI_Finalize();
@@ -82,7 +84,7 @@ static int do_work(const struct work* current_work, char* a, int r, char* m, int
 	int a_count = strlen(a);
 
 	int found = 0;
-	#pragma omp parallel for num_threads(t)
+	#pragma omp parallel for num_threads(2) schedule(dynamic)
 	for(int i = current_work->begin; i<=current_work->end; i++)
 	{
 		char c[r+1]; c[r+1] = '\0';

@@ -7,7 +7,7 @@
 #include "common/work.h"
 #include "common/mpi_tags.h"
 
-#define WORK_SIZE 10000
+#define WORK_SIZE 1000000
 
 #define MIN(a,b) ((a)>(b))?(b):(a)
 

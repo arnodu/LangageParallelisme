@@ -26,7 +26,7 @@ int main(int argc, char ** argv)
     //--- Sortie ---
     char s[r+1];
 
-    MPI_Init(NULL,NULL);
+    MPI_Init(&argc, &argv);
 
     int res = master(p, t ,a ,r ,m ,s);
 
