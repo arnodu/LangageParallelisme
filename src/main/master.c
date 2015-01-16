@@ -5,8 +5,8 @@
 #include <assert.h>
 #include <mpi.h>
 
-#include "common/mpi_tags.h"
-#include "common/work.h"
+#include "util/mpi_tags.h"
+#include "util/work.h"
 
 
 static void parse_arguments(int argc, char** argv, int* p, int* t, char** a, int* r, char** m);
@@ -20,11 +20,10 @@ int main(int argc, char ** argv)
     char* a;//Alphabet de recherche
     int r;//Taille maximum du mdp
     char *m;//mdp à découvrir
-
     parse_arguments(argc, argv, &p, &t, &a, &r, &m);
 
     //--- Sortie ---
-    char s[r+1];
+    char s[r+1]; s[0] = '\0';
 
     MPI_Init(&argc, &argv);
 
@@ -49,12 +48,10 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
     char *argv[] = {tc, a, rc, m, NULL};
     MPI_Comm_spawn("./worker", argv, p-1, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &comm_workers, MPI_ERRCODES_IGNORE);
 
-    //Initiate connexion with workers : TAG_WORK_REQUEST, TAG_PWD_FOUND
-    MPI_Request recv_work_request;
-    MPI_Recv_init(NULL,0,MPI_INT,MPI_ANY_SOURCE,TAG_WORK_REQUEST,comm_workers,&recv_work_request);
+    MPI_Datatype MPI_Type_work = MPI_Type_create_work(r);
 
     //While there is an active worker
-    struct work work = {0,0};
+    struct work work = WORK_NULL;
     int active_workers = p-1;
     int found = 0;
     while(active_workers > 0 && !found)
@@ -64,14 +61,14 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
         //Message received from worker
         if(status.MPI_TAG == TAG_WORK_REQUEST)
         {
-            MPI_Start(&recv_work_request);
-            MPI_Wait(&recv_work_request, MPI_STATUS_IGNORE);
+            MPI_Recv(NULL,0,MPI_INT,status.MPI_SOURCE,TAG_WORK_REQUEST,comm_workers,MPI_STATUS_IGNORE);
             //Answer work request
             if(!found)
 							work_next(a_size, r, &work); //get work
 						else
-							work.end = work.begin; //If pawd found, send empty job
-						work_send(comm_workers, status.MPI_SOURCE, &work);
+							work = WORK_NULL; //If pwd found, send empty job
+
+						MPI_Send(&work, 1, MPI_Type_work, status.MPI_SOURCE, TAG_SEND_WORK, comm_workers);
         }
         else if(status.MPI_TAG == TAG_PWD_FOUND) //If found return
         {
@@ -82,15 +79,13 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
         }
         else if(status.MPI_TAG == TAG_WORK_DONE)
         {
-            MPI_Recv(s, r, MPI_CHAR, status.MPI_SOURCE, TAG_WORK_DONE, comm_workers, MPI_STATUS_IGNORE);
+            MPI_Recv(NULL, 0, MPI_INT, status.MPI_SOURCE, TAG_WORK_DONE, comm_workers, MPI_STATUS_IGNORE);
             active_workers --;
         }
         else
 					assert(0);
     }
 
-		//MPI_Test()
-		MPI_Request_free(&recv_work_request);
     MPI_Comm_free(&comm_workers);
 
     return found;
@@ -137,9 +132,14 @@ static void parse_arguments(int argc, char** argv, int* p, int* t, char** a, int
         *a = argv[4];
         *r = atoi_checked(argv[5]);
 
-        if(p<=0 || t<=0 || r<=0)
+        if(*p<=0 || *t<=0 || *r<=0)
         {
             fprintf(stderr, "Tous les paramètres doivent etre positifs!\n");
+            exit(EXIT_FAILURE);
+        }
+        if(*r > WORK_MAX_WORD_SIZE)
+        {
+            fprintf(stderr, "Le nombre max de lettre est trop grand (>%d)!\n",WORK_MAX_WORD_SIZE);
             exit(EXIT_FAILURE);
         }
     }

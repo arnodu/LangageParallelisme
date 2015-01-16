@@ -10,17 +10,9 @@ if(DEFINED USE_MKL)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mkl:${USE_MKL} -DUSE_MKL")
 endif()
 
-file(GLOB_RECURSE master_files
-       "src/master/*.c"
-       "src/master/*.h")
-
-file(GLOB_RECURSE worker_files
-       "src/worker/*.c"
-       "src/worker/*.h")
-
-file(GLOB_RECURSE common_files
-       "src/common/*.c"
-       "src/common/*.h")
+file(GLOB_RECURSE util_files
+       "src/util/*.c"
+       "src/util/*.h")
 
 find_package(MPI)
 message("Using MPI libs: ${MPI_LIBRARIES}")
@@ -29,14 +21,17 @@ set(PROJECT_INCLUDE_DIR "src")
 include_directories("${PROJECT_INCLUDE_DIR}")
 include_directories("${MPI_INCLUDE_PATH}")
 
-add_executable("master"	${master_files}
-			${common_files})
+add_executable("master"	${util_files}
+			src/main/master.c)
 target_link_libraries("master" ${MPI_LIBRARIES} m)
 
-add_executable("worker"	${worker_files}
-			${common_files})
+add_executable("worker"	${util_files}
+			src/main/worker.c)
 target_link_libraries("worker" ${MPI_LIBRARIES} m)
 
+add_executable("test_util"	${util_files}
+			src/main/test_util.c)
+target_link_libraries("test_util" ${MPI_LIBRARIES} m)
 
 
 
