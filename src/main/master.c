@@ -8,7 +8,6 @@
 #include "util/mpi_tags.h"
 #include "util/work.h"
 
-
 static void parse_arguments(int argc, char** argv, int* p, int* t, char** a, int* r, char** m);
 static int master(int p, int t ,char* a ,int r ,char* m , char* s);
 
@@ -31,7 +30,7 @@ int main(int argc, char ** argv)
 
     MPI_Finalize();
 
-    //Show result
+    //Affiche le résultat
     if(res == 1)
         printf("Found : %s\n",s);
     else
@@ -41,7 +40,8 @@ int main(int argc, char ** argv)
 static int master(int p, int t ,char* a ,int r ,char* m , char* s)
 {
 		int a_size = strlen(a);
-    //Spawn the workers
+
+    //Spawn les workers en leur donant t et r en paramètres
     MPI_Comm comm_workers;
     char tc[] = {(char)t,'\0'};
     char rc[] = {(char)r,'\0'};
@@ -50,35 +50,37 @@ static int master(int p, int t ,char* a ,int r ,char* m , char* s)
 
     MPI_Datatype MPI_Type_work = MPI_Type_create_work(r);
 
-    //While there is an active worker
     struct work work = WORK_NULL;
-    int active_workers = p-1;
-    int found = 0;
+    int active_workers = p-1; //les workers spawnés sont actifs
+    int found = 0;//le mdp n'a pas encore été trouvé
+    //Tant qu'on a des workers actifs
     while(active_workers > 0 && !found)
     {
+        //On scrute les messages entrants
         MPI_Status status;
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm_workers, &status);
-        //Message received from worker
+
         if(status.MPI_TAG == TAG_WORK_REQUEST)
         {
             MPI_Recv(NULL,0,MPI_INT,status.MPI_SOURCE,TAG_WORK_REQUEST,comm_workers,MPI_STATUS_IGNORE);
-            //Answer work request
+            //Répondre à la requete
             if(!found)
-							work_next(a_size, r, &work); //get work
-						else
-							work = WORK_NULL; //If pwd found, send empty job
+							work_next(a_size, r, &work);//Déterminer le travail suivant
+						else//Si le mdp a été trouvé, on envoie un work vide pour que le worker s'arrete
+							work = WORK_NULL;
 
+            //Envoi du travail
 						MPI_Send(&work, 1, MPI_Type_work, status.MPI_SOURCE, TAG_SEND_WORK, comm_workers);
         }
-        else if(status.MPI_TAG == TAG_PWD_FOUND) //If found return
-        {
+        else if(status.MPI_TAG == TAG_PWD_FOUND)
+        {//mdp trouvé : recevoir le resultat
             //Receive result in s
             MPI_Recv(s, r, MPI_CHAR, status.MPI_SOURCE, TAG_PWD_FOUND, comm_workers, MPI_STATUS_IGNORE);
-            found = 1;
+            found = 1;//Le master ne donnera plus de travail
             active_workers --;
         }
         else if(status.MPI_TAG == TAG_WORK_DONE)
-        {
+        {//Le worker à recu un travail vide et s'est bien arrêté
             MPI_Recv(NULL, 0, MPI_INT, status.MPI_SOURCE, TAG_WORK_DONE, comm_workers, MPI_STATUS_IGNORE);
             active_workers --;
         }

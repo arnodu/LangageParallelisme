@@ -1,3 +1,7 @@
+/*** mpi_tags.h
+ * Contient les tags MPI utilisés
+ ***/
+
 #ifndef MPI_TAGS_H
 #define MPI_TAGS_H
 

@@ -23,15 +23,15 @@ include_directories("${MPI_INCLUDE_PATH}")
 
 add_executable("master"	${util_files}
 			src/main/master.c)
-target_link_libraries("master" ${MPI_LIBRARIES} m)
+target_link_libraries("master" ${MPI_LIBRARIES})
 
 add_executable("worker"	${util_files}
 			src/main/worker.c)
-target_link_libraries("worker" ${MPI_LIBRARIES} m)
+target_link_libraries("worker" ${MPI_LIBRARIES})
 
 add_executable("test_util"	${util_files}
 			src/main/test_util.c)
-target_link_libraries("test_util" ${MPI_LIBRARIES} m)
+target_link_libraries("test_util" ${MPI_LIBRARIES})
 
 
 

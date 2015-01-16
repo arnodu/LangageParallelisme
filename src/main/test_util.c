@@ -77,6 +77,13 @@ static void test_word_add()
   str[0] = 9; str[1] = 9; str[2] = 0;
   rem = word_add(res, str, 1, 2, 9);
   assert(rem != 0);
+
+  str[0] = 1; str[1] = 1; str[2] = 0;
+  rem = word_add(res, str, 0, 2, 9);
+  assert(rem == 0);
+  assert(res[0] == 1);
+  assert(res[1] == 1);
+  assert(res[2] == 0);
 }
 
 int main()

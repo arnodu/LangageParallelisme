@@ -1,4 +1,6 @@
-#include <math.h>
+/*** word.c
+ * Implémentation des fonctions de word.h
+ **/
 
 #include "word.h"
 
@@ -7,13 +9,10 @@ int word_inc(char* str, int size_max, int alpha_size)
   return word_add(str, str, 1, size_max, alpha_size);
 }
 
-/* Ajoute to_add a str et le stocke dans dest
- * @return ce qu'il reste à ajouter
- */
 int word_add(char* dest,const char* str, int to_add, int size_max, int alpha_size)
 {
   int i;
-  for(i=0; i<size_max; i++)
+  for(i=0; i<size_max && to_add != 0; i++)
   {
     int current_letter=str[i];
 

@@ -1,8 +1,9 @@
+/*** work.c
+ * Implémentation des fonctions de work.h
+ ***/
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#include <limits.h>
-#include <assert.h>
 
 #include "util/work.h"
 #include "util/word.h"
@@ -16,15 +17,14 @@ void print_work(struct work* work)
 {
   printf("{%d, ",work->size);
   for(int i=0; work->begin[i]!=0; i++)
-     printf("%d ", work->begin[i]);
+    printf("%d ", work->begin[i]);
   printf("}\n");
 }
 
 int work_next(int alpha_size, int r, struct work* work)
 {
-
   //work->begin += WORK_SIZE
-  int rem = word_add(work->begin, work->begin, WORK_SIZE, r, alpha_size);
+  int rem = word_add(work->begin, work->begin, work->size, r, alpha_size);
 
   //if(work->begin > "zzzzz"){work->begin = "zzzzz"; work->size=0}
   if(rem != 0)
