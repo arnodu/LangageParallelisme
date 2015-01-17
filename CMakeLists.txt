@@ -33,6 +33,10 @@ add_executable("test_util"	${util_files}
 			src/main/test_util.c)
 target_link_libraries("test_util" ${MPI_LIBRARIES})
 
+add_executable("bench"	${util_files}
+			src/main/bench.c)
+target_link_libraries("bench" ${MPI_LIBRARIES})
+
 
 
 

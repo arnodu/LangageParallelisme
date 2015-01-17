@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <assert.h>
 #include <string.h>
 #include <mpi.h>
@@ -16,17 +18,18 @@
  ***/
 static int compare_to_pwd(char* current, char* pwd, char* a)
 {
-  int equals = 1;
+  /*
+  printf("%s:",pwd);
+  for(int i=0; current[i]!=0; i++)
+    printf("%c",a[current[i]-1]);
+  printf("\n");*/
+
   int i;
-  for(i=0; pwd[i]!='\0'; i++)
-    equals &= (pwd[i] == a[(int)current[i]]);
+  for(i=0; pwd[i]!='\0' && current[i]!=0; i++)
+    if(pwd[i] != a[(int)current[i]-1])
+      return 0;
 
-  return equals && current[i]==0;
-
-  /*for(int i=0; current[i]!=0; i++)
-    printf("%d",current[i]);
-  printf("\n");
-  return 0;*/
+  return current[i]==pwd[i];
 }
 
 /**
@@ -45,6 +48,7 @@ static int do_work(const struct work* current_work, char* alpha, int max_size, c
   #pragma omp parallel
   {
     int block_local;
+
     //block représente une file de blocs
     //pop un block
     #pragma omp atomic capture
@@ -65,7 +69,7 @@ static int do_work(const struct work* current_work, char* alpha, int max_size, c
             //Recopie du mot trouvé dans output
             int i;
             for(i=0; local_str[i] != 0; i++)
-              out[i] = alpha[(int)local_str[i]];
+              out[i] = alpha[(int)local_str[i]-1];
             out[i] = '\0';
           }
           break;
@@ -84,6 +88,11 @@ static int do_work(const struct work* current_work, char* alpha, int max_size, c
 
 int main(int argc, char ** argv)
 {
+  char host[15];
+  gethostname(host, 15);
+  pid_t pid = getpid();
+  printf("-- Worker spawned : %s::%d -- \n", host, pid);
+
   //Get program arguments
   assert(argc == 5);
   int t = (int)*argv[1];
@@ -97,6 +106,7 @@ int main(int argc, char ** argv)
   assert(provided == MPI_THREAD_FUNNELED);
   MPI_Comm comm_master;
   MPI_Comm_get_parent(&comm_master);
+
 
   MPI_Datatype MPI_Type_work = MPI_Type_create_work();
 
@@ -124,7 +134,7 @@ int main(int argc, char ** argv)
 
   //Envoi (ou non) de la réponse
   if(pwd_found)
-    MPI_Send(s, r, MPI_CHAR, 0, TAG_PWD_FOUND, comm_master);
+    MPI_Send(s, r+1, MPI_CHAR, 0, TAG_PWD_FOUND, comm_master);
   else
     MPI_Send(NULL, 0, MPI_INT, 0, TAG_WORK_DONE, comm_master);
 
@@ -132,6 +142,8 @@ int main(int argc, char ** argv)
 
   MPI_Comm_free(&comm_master);
   MPI_Finalize();
+
+  printf("-- Worker finished normally : %s::%d -- \n", host, pid);
 }
 
 

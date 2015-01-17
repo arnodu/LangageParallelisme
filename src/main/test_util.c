@@ -12,7 +12,7 @@ static void test_word_add()
 
   for(int i=0; i<220; i++)
   {
-    int rem = word_add(res, str, i, 2, 9);
+    int rem = word_add(res, str, i*1000, 8, 9);
     printf("%d:\t",i);
     for(int k=0; res[k]!=0; k++)
       printf("%d",res[k]);
@@ -84,6 +84,10 @@ static void test_word_add()
   assert(res[0] == 1);
   assert(res[1] == 1);
   assert(res[2] == 0);
+
+  str[0] = 9; str[1] = 9; str[2] = 0;
+  rem = word_add(res, str, 1, 2, 9);
+  assert(rem == 1);
 }
 
 int main()

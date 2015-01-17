@@ -7,8 +7,10 @@
 
 #include <mpi.h>
 
-#define WORK_MAX_WORD_SIZE 10
-#define WORK_SIZE 10000
+#define WORK_MAX_WORD_SIZE 20
+#define WORK_SIZE_DEFAULT 100000
+
+int WORK_SIZE;
 
 ///Structure decrivant un travail
 struct work{
@@ -27,7 +29,7 @@ MPI_Datatype MPI_Type_create_work();
 /**
  * Récupère le travail qui succède à w
  * begin ne peut pas avoir plus de lettres que size_max,
- * le dernier travail commencera par le dernier mot possible et sera de taille 0 
+ * le dernier travail commencera par le dernier mot possible et sera de taille 0
  * la taille du travail dépend de WORK_SIZE
  * @param a_size taille de l'alphabet
  * @param size_max taille max du mdp

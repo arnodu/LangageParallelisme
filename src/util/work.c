@@ -11,6 +11,8 @@
 
 #define MIN(a,b) ((a)>(b))?(b):(a)
 
+int WORK_SIZE = WORK_SIZE_DEFAULT;
+
 struct work WORK_NULL = {{0},0};
 
 void print_work(struct work* work)

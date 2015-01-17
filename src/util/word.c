@@ -12,7 +12,7 @@ int word_inc(char* str, int size_max, int alpha_size)
 int word_add(char* dest,const char* str, int to_add, int size_max, int alpha_size)
 {
   int i;
-  for(i=0; i<size_max && to_add != 0; i++)
+  for(i=0; i<size_max; i++)
   {
     int current_letter=str[i];
 
